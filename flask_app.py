@@ -266,27 +266,43 @@ def opciones_select_ucr(soup, select_id):
 
 
 def obtener_pagina_consulta_ucr(session):
-    """El GET inicial a la UCR a veces devuelve la página de bienvenida
-    (con un enlace 'Consultar guía de horarios') en vez del formulario
-    con los combos directamente. Si no encontramos cboGuia, buscamos ese
-    enlace y hacemos el postback necesario para llegar al formulario real."""
+    """El GET inicial a la UCR devuelve la página de bienvenida, con un
+    botón de submit (id='btnConsultar', texto 'Consultar guía de horarios
+    acá') que hay que enviar para llegar al formulario real con los
+    combos. Si no encontramos cboGuia, buscamos ese botón y reenviamos
+    el formulario con su nombre/valor incluido (así es como lo hace un
+    <input type=submit> de ASP.NET, sin pasar por __doPostBack)."""
     r = session.get(UCR_BASE, timeout=20, verify=VERIFICAR_SSL)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
     if soup.find(id="cboGuia"):
         return soup
 
+    boton = None
+    for candidato in soup.find_all("input", {"type": ["submit", "button"]}):
+        texto = (candidato.get("value") or "")
+        id_ = (candidato.get("id") or "")
+        if "consultar" in texto.lower() or "consultar" in id_.lower():
+            boton = candidato
+            break
+
+    if boton is not None:
+        campos = campos_ocultos_ucr(soup)
+        nombre_boton = boton.get("name") or boton.get("id")
+        campos[nombre_boton] = boton.get("value", "")
+        r2 = session.post(UCR_BASE, data=campos, timeout=30, verify=VERIFICAR_SSL)
+        r2.raise_for_status()
+        soup = BeautifulSoup(r2.text, "html.parser")
+        if soup.find(id="cboGuia"):
+            return soup
+
+    # Respaldo: si no había botón de submit, probamos con un enlace tipo
+    # __doPostBack (LinkButton) que mencione "consultar" en su id.
     enlace = None
-    for a in soup.find_all("a"):
-        if a.get("id") and "consultar" in a.get_text(strip=True).lower():
+    for a in soup.find_all("a", id=True):
+        if "onsult" in a["id"].lower():
             enlace = a
             break
-    if enlace is None:
-        for a in soup.find_all("a", id=True):
-            if "onsult" in a["id"].lower():
-                enlace = a
-                break
-
     if enlace is not None:
         soup = postback_ucr(session, soup, enlace["id"], {})
 
