@@ -380,6 +380,29 @@ def parsear_curso_ucr(card_div, sede_texto):
     return resultado
 
 
+@app.route("/api/ucr/debug")
+def api_ucr_debug():
+    """Endpoint temporal de diagnóstico: muestra qué trae realmente el GET
+    inicial a la UCR (título, selects presentes, enlaces con id) para
+    entender por qué cboGuia no aparece."""
+    try:
+        s = nueva_sesion_ucr()
+        r = s.get(UCR_BASE, timeout=20, verify=VERIFICAR_SSL)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        return jsonify({
+            "status_code": r.status_code,
+            "url_final": r.url,
+            "titulo": soup.title.get_text(strip=True) if soup.title else None,
+            "selects_encontrados": [s.get("id") for s in soup.find_all("select")],
+            "enlaces_con_id": [{"id": a.get("id"), "texto": a.get_text(strip=True)} for a in soup.find_all("a", id=True)],
+            "botones_con_id": [{"id": b.get("id"), "texto": b.get_text(strip=True) or b.get("value")} for b in soup.find_all(["button", "input"], id=True)],
+            "primeros_2000_chars": r.text[:2000],
+        })
+    except Exception as e:
+        return jsonify({"error": f"No se pudo contactar a la UCR: {e}"}), 502
+
+
 @app.route("/api/ucr/guias")
 def api_ucr_guias():
     try:
