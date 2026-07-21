@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permutador de Horarios</title>
+  <style>
+    /* --- CORE VARIABLES & THEMES --- */
+    :root {
+      --cell-width: 202px;
+      --cell-height: 30px; 
+      
+      /* Default Theme (Oscuro Azul) */
+      --bg-app: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-input: #0f172a;
+      --border: #334155;
+      --primary: #6366f1;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --shadow: rgba(0, 0, 0, 0.3);
+    }
+
+    /* --- TEMAS OSCUROS --- */
+    [data-theme="dark-purple"] {
+      --bg-app: #1e1b4b; --bg-panel: #312e81; --bg-input: #1e1b4b; --border: #4338ca;
+      --primary: #818cf8; --text-main: #e0e7ff; --text-muted: #a5b4fc; --accent: #34d399; --danger: #f87171;
+    }
+    [data-theme="dark-green"] {
+      --bg-app: #052e16; --bg-panel: #064e3b; --bg-input: #022c22; --border: #065f46;
+      --primary: #34d399; --text-main: #ecfdf5; --text-muted: #6ee7b7; --accent: #60a5fa; --danger: #f87171;
+    }
+    [data-theme="dark-gray"] {
+      --bg-app: #18181b; --bg-panel: #27272a; --bg-input: #18181b; --border: #3f3f46;
+      --primary: #a1a1aa; --text-main: #f4f4f5; --text-muted: #a1a1aa; --accent: #e4e4e7; --danger: #ef4444;
+    }
+    [data-theme="dark-red"] {
+      --bg-app: #450a0a; --bg-panel: #7f1d1d; --bg-input: #450a0a; --border: #991b1b;
+      --primary: #f87171; --text-main: #fef2f2; --text-muted: #fca5a5; --accent: #fbbf24; --danger: #ef4444;
+    }
+    [data-theme="dark-teal"] {
+      --bg-app: #134e4a; --bg-panel: #115e59; --bg-input: #0f766e; --border: #2dd4bf;
+      --primary: #2dd4bf; --text-main: #f0fdfa; --text-muted: #99f6e4; --accent: #fcd34d; --danger: #fda4af;
+    }
+
+    /* --- TEMAS PASTELES (Texto oscuro para contraste) --- */
+    [data-theme="pastel-pink"] {
+      --bg-app: #fff1f2; --bg-panel: #ffe4e6; --bg-input: #fff1f2; --border: #fecdd3;
+      --primary: #e11d48; --text-main: #881337; --text-muted: #be123c; --accent: #059669; --danger: #e11d48;
+      --shadow: rgba(225, 29, 72, 0.1);
+    }
+    [data-theme="pastel-blue"] {
+      --bg-app: #f0f9ff; --bg-panel: #e0f2fe; --bg-input: #f0f9ff; --border: #bae6fd;
+      --primary: #0284c7; --text-main: #0c4a6e; --text-muted: #0369a1; --accent: #059669; --danger: #ef4444;
+      --shadow: rgba(2, 132, 199, 0.1);
+    }
+    [data-theme="pastel-green"] {
+      --bg-app: #f0fdf4; --bg-panel: #dcfce7; --bg-input: #f0fdf4; --border: #bbf7d0;
+      --primary: #15803d; --text-main: #14532d; --text-muted: #166534; --accent: #0284c7; --danger: #dc2626;
+      --shadow: rgba(21, 128, 61, 0.1);
+    }
+    [data-theme="pastel-lavender"] {
+      --bg-app: #f5f3ff; --bg-panel: #ede9fe; --bg-input: #f5f3ff; --border: #ddd6fe;
+      --primary: #7c3aed; --text-main: #4c1d95; --text-muted: #6d28d9; --accent: #059669; --danger: #dc2626;
+      --shadow: rgba(124, 58, 237, 0.1);
+    }
+    [data-theme="pastel-peach"] {
+      --bg-app: #fff7ed; --bg-panel: #ffedd5; --bg-input: #fff7ed; --border: #fed7aa;
+      --primary: #c2410c; --text-main: #7c2d12; --text-muted: #9a3412; --accent: #059669; --danger: #ef4444;
+      --shadow: rgba(194, 65, 12, 0.1);
+    }
+    [data-theme="pastel-mint"] {
+      --bg-app: #f0fdfa; --bg-panel: #ccfbf1; --bg-input: #f0fdfa; --border: #99f6e4;
+      --primary: #0f766e; --text-main: #134e4a; --text-muted: #115e59; --accent: #d97706; --danger: #be123c;
+      --shadow: rgba(15, 118, 110, 0.1);
+    }
+
+    * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      padding: 20px;
+      min-height: 100vh;
+      font-size: 14px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+    }
+
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border);
+    }
+    .brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    
+    .theme-select {
+      background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border);
+      padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; min-width: 180px;
+    }
+
+    .panel {
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .input-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .input-field {
+      background: var(--bg-input); border: 2px solid var(--border); color: var(--text-main);
+      padding: 8px 12px; border-radius: 8px; font-size: 0.95rem; transition: border 0.2s;
+    }
+    .input-field:focus { border-color: var(--primary); }
+    
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px;
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--text-main); }
+    .btn-icon { padding: 6px; border-radius: 6px; aspect-ratio: 1; justify-content: center; }
+    .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+    .btn-circle { width: 30px; height: 30px; border-radius: 50%; padding: 0; justify-content: center; font-weight: bold; }
+
+    /* GESTIÓN DE CURSOS */
+    .course-item {
+      border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+      background: var(--bg-panel); overflow: hidden;
+    }
+    
+    .course-header {
+      padding: 10px 15px; 
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid transparent; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .course-header:hover { background: var(--bg-input); }
+    .course-item.expanded .course-header { border-bottom-color: var(--border); background: var(--bg-input); }
+    
+    .course-title-edit {
+      background: transparent; border: 1px solid transparent; color: var(--text-main);
+      font-weight: 700; font-size: 1.1rem; width: 250px; padding: 2px 4px;
+    }
+    .course-title-edit:focus { border-bottom: 2px solid var(--primary); outline: none; }
+
+    .course-content { display: none; padding: 15px; background: var(--bg-app); border-top: 1px solid var(--border); }
+    .course-item.expanded .course-content { display: block; }
+
+    .groups-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; margin-top: 15px; }
+    
+    .group-card {
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; position: relative; border-left: 3px solid var(--primary);
+    }
+    
+    .group-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+      padding-bottom: 5px; border-bottom: 1px solid var(--border);
+    }
+    
+    .time-chip {
+      background: var(--bg-input); border: 1px solid var(--border); padding: 5px 10px;
+      border-radius: 6px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 8px;
+      cursor: pointer; margin-top: 5px; margin-right: 5px; transition: border-color 0.2s;
+    }
+    .time-chip:hover { border-color: var(--primary); }
+    .edit-icon { opacity: 0.5; font-size: 0.9em; }
+    .time-chip:hover .edit-icon { opacity: 1; }
+
+    .add-slot-toolbar {
+      display: flex; gap: 5px; flex-wrap: wrap;
+      background: var(--bg-input); padding: 8px; border-radius: 6px; align-items: center;
+    }
+    .mini-input {
+      background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-main);
+      padding: 4px 6px; border-radius: 4px; font-size: 0.85rem;
+    }
+
+    /* HORARIO VISUALIZACIÓN */
+    .schedule-controls {
+      display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;
+      background: var(--bg-panel); padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+    }
+
+    .schedule-card {
+      background: var(--bg-panel); border-radius: 16px; padding: 20px;
+      border: 2px solid var(--border); margin-bottom: 30px; position: relative;
+      box-shadow: 0 8px 32px var(--shadow);
+      animation: scaleIn 0.5s ease-out backwards;
+    }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(7, var(--cell-width));
+      gap: 2px; margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    .day-column {
+      background: var(--bg-input);
+      border-radius: 8px; overflow: hidden; position: relative;
+    }
+
+    .day-header {
+      background: var(--primary); 
+      color: white; padding: 12px; text-align: center;
+      font-weight: 700; font-size: 0.95em; position: relative; z-index: 5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .time-grid { position: relative; }
+
+    .time-slot {
+      height: var(--cell-height);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75em; color: var(--text-muted); box-sizing: border-box;
+    }
+
+    .course-block {
+      position: absolute; left: 2px; right: 2px;
+      border-radius: 6px; padding: 4px;
+      color: white; font-size: 0.85em; overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center; cursor: pointer; transition: all 0.3s ease;
+      backdrop-filter: blur(10px); line-height: 1.2; box-sizing: border-box;
+    }
+    .course-block:hover { transform: scale(1.05); z-index: 100; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+    .course-block strong { font-size: 1.1em; margin: 2px 0; }
+    .course-block small { opacity: 0.9; font-size: 0.85em; }
+
+    /* TEXTO ADAPTATIVO */
+    .course-block.compact-text { padding: 1px; }
+    .course-block.compact-text strong { font-size: 0.8em; margin: 1px 0; }
+    .course-block.compact-text small { font-size: 0.7em; opacity: 1; }
+
+    /* MODAL AYUDA */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--bg-panel); padding: 30px; border-radius: 12px;
+      max-width: 600px; width: 90%; border: 1px solid var(--border);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 30px; right: 30px; background: var(--bg-panel);
+      color: var(--text-main); padding: 15px 25px; border-radius: 12px;
+      box-shadow: 0 8px 32px var(--shadow); border: 2px solid var(--border);
+      z-index: 2000; transform: translateX(200%); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.success { border-color: var(--accent); }
+    .toast.error { border-color: var(--danger); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; background: var(--accent); color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div class="brand">
+        ⚡ GaVolt <span style="font-size:0.5em; opacity:0.6; margin-left:5px">v2.1 adaptive</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn btn-ghost btn-circle" onclick="toggleHelp()">?</button>
+        <select class="theme-select" id="themeSelector" onchange="changeTheme(this.value)">
+          <optgroup label="Oscuros">
+            <option value="dark-blue">🌑 Oscuro Azul</option>
+            <option value="dark-purple">🔮 Oscuro Violeta</option>
+            <option value="dark-green">🌲 Oscuro Verde</option>
+            <option value="dark-gray">🌚 Oscuro Gris</option>
+            <option value="dark-red">🍷 Oscuro Rojo</option>
+            <option value="dark-teal">🌊 Oscuro Petróleo</option>
+          </optgroup>
+          <optgroup label="Pasteles">
+            <option value="pastel-pink">🌸 Pastel Rosa</option>
+            <option value="pastel-blue">☁️ Pastel Azul</option>
+            <option value="pastel-green">🌱 Pastel Verde</option>
+            <option value="pastel-lavender">🪻 Pastel Lavanda</option>
+            <option value="pastel-peach">🍑 Pastel Durazno</option>
+            <option value="pastel-mint">🍃 Pastel Menta</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel" id="tecPanel">
+      <div style="font-weight:700; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+        <span>🏫 Importar Oferta del TEC</span>
+        <button class="btn btn-ghost btn-sm" id="tecToggleBtn" onclick="toggleTecPanel()">Ocultar</button>
+      </div>
+      <div id="tecPanelBody">
+        <div class="input-row" style="margin-bottom:10px">
+          <label style="font-weight:600">Universidad:</label>
+          <select id="selUniversidad" class="input-field" style="min-width:140px" onchange="cambiarUniversidad()">
+            <option value="tec">TEC</option>
+            <option value="ucr">UCR</option>
+          </select>
+        </div>
+        <div class="input-row" id="tecSelects" style="margin-bottom:10px">
+          <select id="tecEscuela" class="input-field" style="min-width:220px"><option value="">Cargando sedes/escuelas...</option></select>
+          <select id="tecAnio" class="input-field" style="min-width:120px"><option value="">Año</option></select>
+          <select id="tecPeriodo" class="input-field" style="min-width:150px"><option value="">Periodo</option></select>
+          <select id="tecModalidad" class="input-field" style="min-width:150px"><option value="">Modalidad</option></select>
+          <button class="btn btn-primary" onclick="buscarCursosTEC()">🔍 Buscar Cursos</button>
+        </div>
+        <div class="input-row" id="ucrSelects" style="margin-bottom:10px; display:none">
+          <select id="ucrCiclo" class="input-field" style="min-width:180px" onchange="cargarRecintosUCR()"><option value="">Cargando ciclos...</option></select>
+          <select id="ucrRecinto" class="input-field" style="min-width:220px" onchange="cargarEscuelasUCR()"><option value="">Sede/Recinto</option></select>
+          <select id="ucrEscuela" class="input-field" style="min-width:220px"><option value="">Escuela</option></select>
+          <button class="btn btn-primary" onclick="buscarCursosUCR()">🔍 Buscar Cursos</button>
+        </div>
+        <div id="tecResultados" style="max-height:400px; overflow-y:auto;"></div>
+        <div class="input-row" style="margin-top:10px; justify-content:flex-end; display:none" id="tecImportRow">
+          <button class="btn btn-accent" onclick="importarSeleccionTEC()">➕ Agregar Seleccionados a Mis Cursos</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="input-row">
+        <input type="text" id="newCourseName" class="input-field" placeholder="Nombre del nuevo curso..." style="flex:1; min-width: 200px;">
+        <input type="color" id="newCourseColor" value="#6366f1" style="height:40px; width:50px; border:none; background:transparent; cursor:pointer">
+        <button class="btn btn-primary" onclick="addCourse()">➕ Agregar Curso</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-accent" onclick="generateSchedules()">⚡ Generar</button>
+        
+        <button class="btn btn-ghost" onclick="saveData()" title="Guardar en navegador">💾</button>
+        <button class="btn btn-ghost" onclick="exportJSON()" title="Exportar archivo JSON">📤</button>
+        <button class="btn btn-ghost" onclick="triggerImport()" title="Importar archivo JSON">📥</button>
+        <button class="btn btn-ghost" style="color:var(--danger); border-color:var(--danger)" onclick="clearAll()" title="Borrar todo">🗑️</button>
+        
+        <input type="file" id="importInput" style="display:none" accept=".json" onchange="importJSON(this)">
+      </div>
+    </div>
+
+    <div id="coursesList"></div>
+    <div style="text-align:right; color:var(--text-muted); margin-top:5px; font-size:0.9em">
+      <span id="statCourses">0</span> cursos | <span id="statGroups">0</span> grupos
+    </div>
+
+    <div id="resultsArea" style="display:none; margin-top:30px;">
+      <div class="schedule-controls">
+        <div style="font-size:1.2em; font-weight:700">📅 Horarios Generados <span class="badge" id="schedCount">0</span></div>
+        <div id="filters" style="display:flex; gap:5px;"></div>
+      </div>
+      <div id="schedulesContainer"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <div class="modal" id="helpModal" onclick="if(event.target===this) toggleHelp()">
+    <div class="modal-content">
+      <h2 style="margin-bottom:20px; color:var(--primary)">🎓 Guía Rápida</h2>
+      <p style="margin-bottom:10px"><strong>Permutador de Horarios:</strong> Esta herramienta calcula automáticamente todas las combinaciones posibles de tus cursos para que no se traslapen.</p>
+      <ul style="padding-left:20px; line-height:1.6; color:var(--text-muted)">
+        <li><strong>Cursos:</strong> Agrega las materias que quieres llevar.</li>
+        <li><strong>Grupos:</strong> Añade las diferentes secciones disponibles para cada curso con sus horarios.</li>
+        <li><strong>Generar:</strong> El sistema cruzará todos los datos y te mostrará solo los horarios que no chocan.</li>
+        <li><strong>Opcional:</strong> Marca un curso como "Opcional" para ver combinaciones con y sin él.</li>
+        <li><strong>Importar/Exportar:</strong> Usa los botones 📤 y 📥 para guardar tus datos en un archivo y cargarlos en otro dispositivo.</li>
+      </ul>
+      <button class="btn btn-primary" style="margin-top:20px; width:100%" onclick="toggleHelp()">Entendido</button>
+    </div>
+  </div>
+
+  <script>
+    let courses = {};
+    let currentSchedules = [];
+    const DAYS = ['L', 'K', 'M', 'J', 'V', 'S', 'D'];
+    const DAY_NAMES = { 'L': 'Lun', 'K': 'Mar', 'M': 'Mié', 'J': 'Jue', 'V': 'Vie', 'S': 'Sáb', 'D': 'Dom' };
+
+    window.addEventListener('DOMContentLoaded', () => { loadTheme(); loadData(); cargarOpcionesTEC(); });
+
+    // ================= IMPORTACIÓN DESDE EL TEC =================
+    // Si Flask sirve este mismo HTML (ej. PythonAnywhere), deja API_BASE
+    // vacío: todo va al mismo origen. Si en cambio alojas este HTML por
+    // separado (ej. GitHub Pages) y el backend vive en Render, pon aquí
+    // la URL completa del backend, ej:
+    //   const API_BASE = 'https://tu-app.onrender.com';
+    const API_BASE = '';
+    let tecCursos = []; // resultados crudos de la última búsqueda /api/cursos
+
+    async function cargarOpcionesTEC() {
+      try {
+        const res = await fetch(`${API_BASE}/api/opciones`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        llenarSelectTEC('tecEscuela', data.escuelas, 'Selecciona sede/escuela');
+        llenarSelectTEC('tecAnio', data.anios, 'Año');
+        llenarSelectTEC('tecPeriodo', data.periodos, 'Periodo');
+        llenarSelectTEC('tecModalidad', data.modalidades, 'Modalidad');
+      } catch (e) {
+        document.getElementById('tecEscuela').innerHTML = '<option value="">No se pudo conectar con el servidor</option>';
+        showToast('No se pudo cargar la oferta del TEC (revisa el backend)', 'error');
+      }
+    }
+
+    function llenarSelectTEC(id, opciones, placeholder) {
+      const sel = document.getElementById(id);
+      opciones = opciones || [];
+      sel.innerHTML = `<option value="">${placeholder}</option>` +
+        opciones.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+    }
+
+    async function buscarCursosTEC() {
+      const escuela = document.getElementById('tecEscuela').value;
+      const anio = document.getElementById('tecAnio').value;
+      const periodo = document.getElementById('tecPeriodo').value;
+      const modalidad = document.getElementById('tecModalidad').value;
+      if (!escuela || !anio || !periodo) return showToast('Selecciona al menos sede, año y periodo', 'error');
+
+      const cont = document.getElementById('tecResultados');
+      cont.innerHTML = '<p style="color:var(--text-muted)">Buscando...</p>';
+      document.getElementById('tecImportRow').style.display = 'none';
+
+      try {
+        const params = new URLSearchParams({ escuela, anio, periodo, modalidad });
+        const res = await fetch(`${API_BASE}/api/cursos?${params.toString()}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        tecCursos = await res.json();
+        renderResultadosTEC();
+      } catch (e) {
+        cont.innerHTML = '<p style="color:var(--danger)">Error al buscar cursos.</p>';
+        showToast('Error al consultar el backend', 'error');
+      }
+    }
+
+    function renderResultadosTEC() {
+      const cont = document.getElementById('tecResultados');
+      if (!tecCursos.length) {
+        cont.innerHTML = '<p style="color:var(--text-muted)">Sin resultados para esa selección.</p>';
+        return;
+      }
+
+      // Agrupamos por curso (código + nombre) para mostrar sus grupos juntos
+      const porCurso = {};
+      tecCursos.forEach((c, idx) => {
+        const key = `${c.codigo || ''}||${c.nombre || c.codigo}`;
+        (porCurso[key] = porCurso[key] || []).push({ ...c, _idx: idx });
+      });
+
+      cont.innerHTML = Object.entries(porCurso).map(([key, grupos]) => {
+        const [codigo, nombre] = key.split('||');
+        return `
+          <div class="course-item expanded" style="margin-bottom:8px">
+            <div class="course-header" style="cursor:default">
+              <strong>${nombre} ${codigo ? `<span style="opacity:0.6; font-weight:400">(${codigo})</span>` : ''}</strong>
+            </div>
+            <div class="course-content" style="display:block">
+              ${grupos.map(g => `
+                <label style="display:flex; align-items:flex-start; gap:8px; padding:5px 0; cursor:pointer">
+                  <input type="checkbox" class="tec-check" data-idx="${g._idx}" style="margin-top:3px">
+                  <span>
+                    <strong>Grupo ${g.grupo}</strong>
+                    ${g.profesor ? ` — ${g.profesor}` : ''}
+                    ${g.sede ? ` — <em>${g.sede}</em>` : ''}<br>
+                    <span style="color:var(--text-muted); font-size:0.9em">
+                      ${(g.slots || []).map(s => `${s.dia} ${s.inicio}-${s.fin}${s.aula ? ' ('+s.aula+')' : ''}`).join(', ')}
+                    </span>
+                  </span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('tecImportRow').style.display = 'flex';
+    }
+
+    function importarSeleccionTEC() {
+      const checks = document.querySelectorAll('.tec-check:checked');
+      if (!checks.length) return showToast('Selecciona al menos un grupo', 'error');
+
+      const coloresDisponibles = ['#6366f1','#10b981','#f59e0b','#ef4444','#0ea5e9','#a855f7','#ec4899','#14b8a6'];
+      let agregados = 0;
+
+      checks.forEach(chk => {
+        const g = tecCursos[chk.dataset.idx];
+        if (!g) return;
+        const nombreCurso = g.nombre || g.codigo || 'Curso sin nombre';
+
+        if (!courses[nombreCurso]) {
+          const color = coloresDisponibles[Object.keys(courses).length % coloresDisponibles.length];
+          courses[nombreCurso] = { color, excludable: false, groups: {} };
+        }
+        if (!courses[nombreCurso].groups[g.grupo]) {
+          courses[nombreCurso].groups[g.grupo] = (g.slots || []).map(s => ({
+            day: s.dia,
+            start: timeToMin(s.inicio),
+            end: timeToMin(s.fin),
+            room: s.aula || '',
+            prof: g.profesor || '',
+            sede: g.sede || ''
+          }));
+          agregados++;
+        }
+      });
+
+      renderCourses(); updateStats(); saveData();
+      showToast(`${agregados} grupo(s) agregados a tus cursos`, 'success');
+    }
+
+    function toggleTecPanel() {
+      const body = document.getElementById('tecPanelBody');
+      const btn = document.getElementById('tecToggleBtn');
+      const oculto = body.style.display === 'none';
+      body.style.display = oculto ? 'block' : 'none';
+      btn.textContent = oculto ? 'Ocultar' : 'Mostrar';
+    }
+
+    // ================= UCR =================
+    // La UCR no tiene una API JSON: cada combo dispara un postback de
+    // ASP.NET (recarga la página completa) y solo muestra el detalle de
+    // UN curso a la vez. El backend (/api/ucr/cursos) ya se encarga de
+    // iterar todos los cursos de la escuela elegida, así que aquí solo
+    // manejamos los 3 selects en cascada (Ciclo -> Recinto -> Escuela).
+    let ucrGuiaValor = '';
+
+    function cambiarUniversidad() {
+      const universidad = document.getElementById('selUniversidad').value;
+      document.getElementById('tecSelects').style.display = universidad === 'tec' ? 'flex' : 'none';
+      document.getElementById('ucrSelects').style.display = universidad === 'ucr' ? 'flex' : 'none';
+      document.getElementById('tecResultados').innerHTML = '';
+      document.getElementById('tecImportRow').style.display = 'none';
+      if (universidad === 'ucr' && !ucrGuiaValor) {
+        cargarGuiaUCR();
+      }
+    }
+
+    async function cargarGuiaUCR() {
+      try {
+        const res = await fetch(`${API_BASE}/api/ucr/guias`);
+        const guias = await res.json();
+        if (!Array.isArray(guias) || !guias.length) throw new Error('sin guías');
+        ucrGuiaValor = guias[0].value;
+        await cargarCiclosUCR();
+      } catch (e) {
+        document.getElementById('ucrCiclo').innerHTML = '<option value="">No se pudo conectar con la UCR</option>';
+        showToast('No se pudo cargar la oferta de la UCR', 'error');
+      }
+    }
+
+    async function cargarCiclosUCR() {
+      const res = await fetch(`${API_BASE}/api/ucr/ciclos?guia=${encodeURIComponent(ucrGuiaValor)}`);
+      const ciclos = await res.json();
+      llenarSelectTEC('ucrCiclo', ciclos, 'Ciclo');
+      llenarSelectTEC('ucrRecinto', [], 'Sede/Recinto');
+      llenarSelectTEC('ucrEscuela', [], 'Escuela');
+    }
+
+    async function cargarRecintosUCR() {
+      const ciclo = document.getElementById('ucrCiclo').value;
+      llenarSelectTEC('ucrEscuela', [], 'Escuela');
+      if (!ciclo) return llenarSelectTEC('ucrRecinto', [], 'Sede/Recinto');
+      const res = await fetch(`${API_BASE}/api/ucr/recintos?guia=${encodeURIComponent(ucrGuiaValor)}&ciclo=${encodeURIComponent(ciclo)}`);
+      const recintos = await res.json();
+      llenarSelectTEC('ucrRecinto', recintos, 'Sede/Recinto');
+    }
+
+    async function cargarEscuelasUCR() {
+      const ciclo = document.getElementById('ucrCiclo').value;
+      const recinto = document.getElementById('ucrRecinto').value;
+      if (!ciclo || !recinto) return llenarSelectTEC('ucrEscuela', [], 'Escuela');
+      const res = await fetch(`${API_BASE}/api/ucr/escuelas?guia=${encodeURIComponent(ucrGuiaValor)}&ciclo=${encodeURIComponent(ciclo)}&recinto=${encodeURIComponent(recinto)}`);
+      const escuelas = await res.json();
+      llenarSelectTEC('ucrEscuela', escuelas, 'Escuela');
+    }
+
+    async function buscarCursosUCR() {
+      const ciclo = document.getElementById('ucrCiclo').value;
+      const recinto = document.getElementById('ucrRecinto').value;
+      const escuela = document.getElementById('ucrEscuela').value;
+      if (!ciclo || !recinto || !escuela) return showToast('Selecciona ciclo, sede y escuela', 'error');
+
+      const cont = document.getElementById('tecResultados');
+      cont.innerHTML = '<p style="color:var(--text-muted)">Buscando en la UCR (puede tardar, revisa curso por curso)...</p>';
+      document.getElementById('tecImportRow').style.display = 'none';
+
+      try {
+        const params = new URLSearchParams({ guia: ucrGuiaValor, ciclo, recinto, escuela });
+        const res = await fetch(`${API_BASE}/api/ucr/cursos?${params.toString()}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        tecCursos = await res.json();
+        renderResultadosTEC();
+      } catch (e) {
+        cont.innerHTML = '<p style="color:var(--danger)">Error al buscar cursos en la UCR.</p>';
+        showToast('Error al consultar el backend', 'error');
+      }
+    }
+
+    // --- TEMAS & DATOS ---
+    function changeTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('gavolt_theme', theme);
+    }
+    function loadTheme() { 
+        // Default "Oscuro Azul" si no hay nada guardado
+        const theme = localStorage.getItem('gavolt_theme') || 'dark-blue';
+        changeTheme(theme); 
+        document.getElementById('themeSelector').value = theme; 
+    }
+
+    function saveData() { localStorage.setItem('gavolt_data_v3', JSON.stringify(courses)); showToast('Datos guardados', 'success'); }
+    function loadData() {
+      const saved = localStorage.getItem('gavolt_data_v3');
+      if (saved) { courses = JSON.parse(saved); renderCourses(); updateStats(); }
+    }
+    function clearAll() {
+      if(confirm("¿Eliminar todos los datos?")) {
+        courses = {}; currentSchedules = []; localStorage.removeItem('gavolt_data_v3');
+        renderCourses(); document.getElementById('resultsArea').style.display = 'none'; updateStats();
+        showToast('Todo eliminado', 'error');
+      }
+    }
+    
+    // --- IMPORTAR / EXPORTAR ---
+    function exportJSON() {
+      if(Object.keys(courses).length === 0) return showToast('No hay datos para exportar', 'error');
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(courses));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href",     dataStr);
+      downloadAnchorNode.setAttribute("download", "mis_horarios.json");
+      document.body.appendChild(downloadAnchorNode); // required for firefox
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      showToast('Archivo exportado', 'success');
+    }
+
+    function triggerImport() { document.getElementById('importInput').click(); }
+
+    function importJSON(input) {
+      const file = input.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const loadedData = JSON.parse(e.target.result);
+          if(confirm("Esto reemplazará tus cursos actuales. ¿Continuar?")) {
+            courses = loadedData;
+            renderCourses();
+            updateStats();
+            saveData();
+            showToast('Datos importados', 'success');
+          }
+        } catch(err) {
+          showToast('Error al leer el archivo', 'error');
+        }
+      };
+      reader.readAsText(file);
+      input.value = ''; // Reset para poder cargar el mismo archivo si es necesario
+    }
+
+    function toggleHelp() {
+      document.getElementById('helpModal').classList.toggle('active');
+    }
+
+    // --- LÓGICA DE CURSOS ---
+    function addCourse() {
+      const name = document.getElementById('newCourseName').value.trim();
+      const color = document.getElementById('newCourseColor').value;
+      if (!name) return showToast('Nombre requerido', 'error');
+      if (courses[name]) return showToast('Curso ya existe', 'error');
+
+      courses[name] = { color, excludable: false, groups: {} };
+      document.getElementById('newCourseName').value = '';
+      renderCourses(); updateStats(); showToast('Curso agregado', 'success');
+    }
+
+    function updateCourseName(oldName, newName) {
+      if (oldName === newName) return;
+      if (!newName.trim() || courses[newName]) { renderCourses(); return showToast('Nombre inválido o duplicado', 'error'); }
+      courses[newName] = courses[oldName]; delete courses[oldName];
+      renderCourses(); saveData();
+    }
+
+    function updateCourseColor(name, color) { courses[name].color = color; saveData(); }
+    function toggleExcludable(name) { courses[name].excludable = !courses[name].excludable; saveData(); }
+    function deleteCourse(name) { if(confirm("¿Borrar curso?")) { delete courses[name]; renderCourses(); updateStats(); saveData(); } }
+
+    // --- LÓGICA DE GRUPOS ---
+    function addGroup(courseName) {
+      const input = document.getElementById(`new-group-id-${sanitize(courseName)}`);
+      const gid = input.value.trim();
+      if (!gid) return showToast('ID de grupo requerido', 'error');
+      if (courses[courseName].groups[gid]) return showToast('Grupo ya existe', 'error');
+
+      courses[courseName].groups[gid] = [];
+      input.value = ''; input.focus();
+      renderCourses(); 
+      setTimeout(() => {
+        const header = document.querySelector(`#content-${sanitize(courseName)}`).parentElement;
+        if(!header.classList.contains('expanded')) header.classList.add('expanded');
+      }, 50);
+      updateStats(); saveData();
+    }
+
+    function renameGroup(cName, oldId, newId) {
+      if (oldId === newId) return;
+      if (courses[cName].groups[newId]) return showToast('ID duplicado', 'error');
+      courses[cName].groups[newId] = courses[cName].groups[oldId];
+      delete courses[cName].groups[oldId];
+      renderCourses(); saveData();
+    }
+
+    function deleteGroup(cName, gid) {
+      if(confirm(`¿Borrar Grupo ${gid}?`)) { delete courses[cName].groups[gid]; renderCourses(); updateStats(); saveData(); }
+    }
+
+    // --- LÓGICA DE HORARIOS (SLOTS) ---
+    function addTimeSlot(cName, gid) {
+      const sId = `${sanitize(cName)}-${sanitize(gid)}`;
+      const day = document.getElementById(`d-${sId}`).value;
+      const start = document.getElementById(`s-${sId}`).value;
+      const end = document.getElementById(`e-${sId}`).value;
+      const room = document.getElementById(`r-${sId}`).value;
+      const prof = document.getElementById(`p-${sId}`).value;
+      const sede = document.getElementById(`sd-${sId}`).value;
+
+      if (!start || !end) return showToast('Horas requeridas', 'error');
+      if (start >= end) return showToast('Hora fin debe ser mayor', 'error');
+
+      courses[cName].groups[gid].push({ day, start: timeToMin(start), end: timeToMin(end), room, prof, sede });
+      renderCourses(); saveData();
+      setTimeout(() => document.querySelector(`#content-${sanitize(cName)}`).parentElement.classList.add('expanded'), 50);
+    }
+
+    function editTimeSlot(cName, gid, idx) {
+      const slot = courses[cName].groups[gid][idx];
+      const sId = `${sanitize(cName)}-${sanitize(gid)}`;
+      courses[cName].groups[gid].splice(idx, 1);
+      renderCourses();
+      setTimeout(() => {
+        const el = document.querySelector(`#content-${sanitize(cName)}`);
+        el.parentElement.classList.add('expanded');
+        document.getElementById(`d-${sId}`).value = slot.day;
+        document.getElementById(`s-${sId}`).value = minToTime(slot.start);
+        document.getElementById(`e-${sId}`).value = minToTime(slot.end);
+        document.getElementById(`r-${sId}`).value = slot.room;
+        document.getElementById(`p-${sId}`).value = slot.prof;
+        document.getElementById(`sd-${sId}`).value = slot.sede || '';
+        document.getElementById(`s-${sId}`).focus();
+      }, 50);
+    }
+
+    // --- RENDERIZADO UI ---
+    function renderCourses() {
+      const list = document.getElementById('coursesList');
+      const openIds = Array.from(document.querySelectorAll('.course-item.expanded')).map(el => el.querySelector('.course-content').id);
+      
+      list.innerHTML = '';
+      Object.keys(courses).forEach(name => {
+        const c = courses[name];
+        const sName = sanitize(name);
+        const isOpen = openIds.includes(`content-${sName}`);
+        
+        const el = document.createElement('div');
+        el.className = `course-item ${isOpen ? 'expanded' : ''}`;
+        el.innerHTML = `
+          <div class="course-header" onclick="this.parentElement.classList.toggle('expanded')">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <input type="color" value="${c.color}" onclick="event.stopPropagation()" onchange="updateCourseColor('${name}', this.value)" style="border:none; width:30px; height:30px; background:none; cursor:pointer;">
+              <input type="text" class="course-title-edit" value="${name}" onclick="event.stopPropagation()" onblur="updateCourseName('${name}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+            </div>
+            <div style="display:flex; align-items:center; gap:15px;">
+              <label onclick="event.stopPropagation()" title="Si se marca, el generador intentará crear horarios incluyendo este curso y también horarios EXCLUYÉNDOLO." style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer; text-decoration:underline dotted var(--text-muted);">
+                <input type="checkbox" ${c.excludable?'checked':''} onchange="toggleExcludable('${name}')"> Opcional
+              </label>
+              <button class="btn btn-ghost btn-icon" style="color:var(--danger)" onclick="event.stopPropagation(); deleteCourse('${name}')">✕</button>
+            </div>
+          </div>
+          <div class="course-content" id="content-${sName}">
+            <div class="input-row" style="margin-bottom:15px">
+              <input type="text" id="new-group-id-${sName}" class="input-field" placeholder="ID Nuevo Grupo (ej: 01)" style="width:200px">
+              <button class="btn btn-primary btn-sm" onclick="addGroup('${name}')">➕ Crear Grupo</button>
+            </div>
+            <div class="groups-container">
+              ${Object.keys(c.groups).sort().map(gid => renderGroupCard(name, gid)).join('')}
+            </div>
+          </div>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    function renderGroupCard(cName, gid) {
+      const sId = `${sanitize(cName)}-${sanitize(gid)}`;
+      const slots = courses[cName].groups[gid];
+      return `
+        <div class="group-card">
+          <div class="group-header">
+            <input class="input-field" style="border:none; background:transparent; font-weight:bold; padding:0; width:100px;" value="${gid}" onblur="renameGroup('${cName}', '${gid}', this.value)">
+            <button class="btn btn-ghost btn-icon" style="color:var(--danger); padding:2px; height:24px; width:24px;" onclick="deleteGroup('${cName}', '${gid}')">🗑️</button>
+          </div>
+          <div class="add-slot-toolbar">
+            <select id="d-${sId}" class="mini-input">${DAYS.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+            <input type="time" id="s-${sId}" class="mini-input">
+            <input type="time" id="e-${sId}" class="mini-input">
+            <input type="text" id="r-${sId}" class="mini-input" placeholder="Aula" style="width:50px">
+            <input type="text" id="p-${sId}" class="mini-input" placeholder="Prof" style="width:70px">
+            <input type="text" id="sd-${sId}" class="mini-input" placeholder="Sede" style="width:70px">
+            <button class="btn btn-primary btn-sm" onclick="addTimeSlot('${cName}', '${gid}')">✓</button>
+          </div>
+          <div style="margin-top:5px">
+            ${slots.map((s, i) => `
+              <div class="time-chip" onclick="editTimeSlot('${cName}', '${gid}', ${i})" title="Clic para editar horario">
+                <strong>${s.day}</strong> ${minToTime(s.start)}-${minToTime(s.end)} 
+                ${s.room ? `<span style="opacity:0.7">(${s.room})</span>` : ''}
+                ${s.sede ? `<span style="opacity:0.7">· ${s.sede}</span>` : ''}
+                <span class="edit-icon">✏️</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // --- ALGORITMO Y RENDERIZADO (ADAPTIVE CORE) ---
+    function generateSchedules() {
+      const mandatory = [], optional = [];
+      for(const k in courses) {
+        if(Object.keys(courses[k].groups).length === 0) return showToast(`"${k}" no tiene grupos`, 'error');
+        if(Object.values(courses[k].groups).some(g => g.length === 0)) return showToast(`"${k}" tiene grupos vacíos`, 'error');
+        courses[k].excludable ? optional.push(k) : mandatory.push(k);
+      }
+
+      const combos = getPowerSet(optional);
+      let results = [];
+
+      combos.forEach(opt => {
+        const selection = [...mandatory, ...opt];
+        if(!selection.length) return;
+        const groupsList = selection.map(c => Object.keys(courses[c].groups));
+        const cartesian = getCartesian(groupsList);
+
+        cartesian.forEach(groupCombo => {
+          const schedule = {};
+          let conflict = false;
+          const busy = {};
+
+          for(let i=0; i<selection.length; i++) {
+            const cName = selection[i];
+            const gid = groupCombo[i];
+            const times = courses[cName].groups[gid];
+            schedule[cName] = { group: gid };
+
+            for(const t of times) {
+              if(!busy[t.day]) busy[t.day] = [];
+              for(const b of busy[t.day]) {
+                if(t.start < b.end && t.end > b.start) { conflict = true; break; }
+              }
+              if(conflict) break;
+              busy[t.day].push(t);
+            }
+            if(conflict) break;
+          }
+          if(!conflict) results.push(schedule);
+        });
+      });
+
+      currentSchedules = results.sort((a,b) => Object.keys(b).length - Object.keys(a).length);
+      renderSchedules(currentSchedules);
+      if(results.length) showToast(`${results.length} horarios generados`, 'success');
+      else showToast('No se encontraron horarios válidos', 'error');
+    }
+
+    function renderSchedules(data) {
+      const container = document.getElementById('schedulesContainer');
+      const area = document.getElementById('resultsArea');
+      container.innerHTML = '';
+      
+      if(data.length === 0) { area.style.display = 'none'; return; }
+      area.style.display = 'block';
+      document.getElementById('schedCount').innerText = data.length;
+
+      document.getElementById('filters').innerHTML = [...new Set(data.map(s => Object.keys(s).length))].sort((a,b)=>b-a).map(n => 
+        `<button class="btn btn-ghost btn-sm" onclick="filterSchedules(${n})">${n} cursos</button>`
+      ).join('');
+
+      let minHour = 6;
+      let maxHour = 22;
+
+      data.forEach(sch => {
+        Object.keys(sch).forEach(cName => {
+          const gid = sch[cName].group;
+          courses[cName].groups[gid].forEach(t => {
+            const hStart = Math.floor(t.start / 60);
+            const hEnd = Math.ceil(t.end / 60);
+            if(hStart < minHour) minHour = hStart;
+            if(hEnd > maxHour) maxHour = hEnd;
+          });
+        });
+      });
+
+      const totalHours = maxHour - minHour + 1;
+      const gridStartMin = minHour * 60;
+      const totalGridMin = totalHours * 60;
+
+      data.forEach((sch, idx) => {
+        const card = document.createElement('div');
+        card.className = `schedule-card course-count-${Object.keys(sch).length}`;
+        
+        let gridHtml = `<div class="schedule-grid">`;
+        
+        DAYS.forEach(day => {
+          gridHtml += `
+            <div class="day-column">
+              <div class="day-header">${DAY_NAMES[day]}</div>
+              <div class="time-grid" style="height: calc(${totalHours} * var(--cell-height))">
+          `;
+          
+          for(let h = minHour; h < minHour + totalHours; h++) {
+            gridHtml += `<div class="time-slot">${h.toString().padStart(2,'0')}:00</div>`;
+          }
+
+          Object.keys(sch).forEach(cName => {
+            const gid = sch[cName].group;
+            const times = courses[cName].groups[gid];
+            const color = courses[cName].color;
+
+            times.filter(t => t.day === day).forEach(t => {
+              const top = ((t.start - gridStartMin) / totalGridMin) * 100;
+              const height = ((t.end - t.start) / totalGridMin) * 100;
+              
+              const duration = t.end - t.start;
+              const compactClass = duration < 140 ? 'compact-text' : '';
+
+              // LOGICA NOMBRE PROFESOR / AULA / SEDE
+              let details = '';
+              if (t.prof && t.room) {
+                  details = `${t.prof} - ${t.room}`;
+              } else if (t.prof) {
+                  details = t.prof;
+              } else if (t.room) {
+                  details = t.room;
+              }
+              if (t.sede) details = details ? `${details} · ${t.sede}` : t.sede;
+
+              gridHtml += `
+                <div class="course-block ${compactClass}" style="top:${top}%; height:${height}%; background:${color};">
+                  <small>${minToTime(t.start)}</small>
+                  <strong>${cName}</strong>
+                  <small>G-${gid}</small>
+                  ${details ? `<small class="extra-small">${details}</small>` : ''}
+                  <small>${minToTime(t.end)}</small>
+                </div>
+              `;
+            });
+          });
+          gridHtml += `</div></div>`;
+        });
+        gridHtml += `</div>`;
+        
+        card.innerHTML = `
+          <div style="position:absolute; top:20px; left:20px; background:var(--primary); color:white; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.2em">${idx+1}</div>
+          <div style="text-align:right; margin-bottom:10px;"><button class="btn btn-sm btn-accent" onclick="copySchedule(${idx})">📋 Copiar Texto</button></div>
+          ${gridHtml}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterSchedules(n) { document.querySelectorAll('.schedule-card').forEach(c => c.style.display = c.classList.contains(`course-count-${n}`) ? 'block' : 'none'); }
+    function copySchedule(idx) {
+      const sch = currentSchedules[idx];
+      let txt = `HORARIO #${idx+1}\n\n`;
+      for(const k in sch) {
+        const gid = sch[k].group;
+        txt += `📚 ${k} (G-${gid})\n`;
+        courses[k].groups[gid].forEach(t => txt += `   ${t.day} ${minToTime(t.start)}-${minToTime(t.end)} ${t.room||''} ${t.prof ? '('+t.prof+')' : ''} ${t.sede ? '['+t.sede+']' : ''}\n`);
+      }
+      navigator.clipboard.writeText(txt); showToast('Copiado', 'success');
+    }
+
+    function sanitize(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+    function timeToMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+    function minToTime(m) { return `${Math.floor(m/60).toString().padStart(2,'0')}:${(m%60).toString().padStart(2,'0')}`; }
+    function getPowerSet(a) { return a.reduce((s, v) => s.concat(s.map(x => [v, ...x])), [[]]); }
+    function getCartesian(a) { return a.reduce((x, y) => x.flatMap(d => y.map(e => [d, e].flat())), [[]]); }
+    function updateStats() {
+      document.getElementById('statCourses').innerText = Object.keys(courses).length;
+      document.getElementById('statGroups').innerText = Object.values(courses).reduce((a,c) => a + Object.keys(c.groups).length, 0);
+    }
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.innerText = msg; t.className = `toast show ${type}`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
