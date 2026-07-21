@@ -61,6 +61,34 @@ DIA_MAP = {
     "DOMINGO": "D",
 }
 
+# ---------------------------------------------------------------------
+# Caché simple en memoria (por proceso). Evita que dos personas buscando
+# lo mismo casi al mismo tiempo disparen el scraping completo dos veces.
+# No es una caché compartida entre workers/procesos (para eso haría falta
+# algo como Redis), pero para el uso esperado aquí es suficiente y no
+# agrega ninguna dependencia extra.
+# ---------------------------------------------------------------------
+import time
+import threading
+
+_CACHE = {}
+_CACHE_LOCK = threading.Lock()
+TTL_SEGUNDOS = 10 * 60  # 10 minutos
+
+
+def con_cache(clave, ttl=TTL_SEGUNDOS):
+    """Devuelve (encontrado, valor) desde la caché si sigue vigente."""
+    with _CACHE_LOCK:
+        entrada = _CACHE.get(clave)
+        if entrada and (time.time() - entrada[0]) < ttl:
+            return True, entrada[1]
+    return False, None
+
+
+def guardar_cache(clave, valor):
+    with _CACHE_LOCK:
+        _CACHE[clave] = (time.time(), valor)
+
 
 def nueva_sesion():
     """Crea una sesión con cookies válidas visitando primero la página
@@ -109,9 +137,14 @@ def index():
 @app.route("/api/opciones")
 def api_opciones():
     try:
+        encontrado, valor = con_cache(("tec_opciones",))
+        if encontrado:
+            return jsonify(valor)
+
         s = nueva_sesion()
         escuelas = llamar_webmethod(s, "cargaEscuelas")
         modalidades = llamar_webmethod(s, "cargaModalidadPeriodos")
+        guardar_cache(("tec_modalidades",), modalidades)
     except Exception as e:
         return jsonify({"error": f"No se pudo contactar al TEC: {e}"}), 502
 
@@ -123,7 +156,7 @@ def api_opciones():
     # Estos periodos vienen fijos en el propio HTML del TEC (no por AJAX)
     periodos = [{"value": str(p), "text": str(p)} for p in (1, 2, 3, 4, 5, 6, 7, 12)]
 
-    return jsonify({
+    resultado = {
         "escuelas": [
             {"value": str(e.get("IDE_DEPTO", "")), "text": f'{e.get("IDE_DEPTO","")} - {e.get("DSC_DEPTO","")}'}
             for e in escuelas
@@ -134,7 +167,9 @@ def api_opciones():
             {"value": str(m.get("IDE_MODALIDAD", "")), "text": m.get("NOMBRE", "")}
             for m in modalidades
         ],
-    })
+    }
+    guardar_cache(("tec_opciones",), resultado)
+    return jsonify(resultado)
 
 
 @app.route("/api/cursos")
@@ -149,11 +184,19 @@ def api_cursos():
 
     try:
         s = nueva_sesion()
-        filas = llamar_webmethod(s, "getdatosEscuelaAno", {"escuela": escuela, "ano": anio})
+
+        clave_cache = ("tec_filas", escuela, anio)
+        encontrado, filas = con_cache(clave_cache)
+        if not encontrado:
+            filas = llamar_webmethod(s, "getdatosEscuelaAno", {"escuela": escuela, "ano": anio})
+            guardar_cache(clave_cache, filas)
 
         modalidad_texto = ""
         if modalidad_id:
-            modalidades = llamar_webmethod(s, "cargaModalidadPeriodos")
+            encontrado_mod, modalidades = con_cache(("tec_modalidades",))
+            if not encontrado_mod:
+                modalidades = llamar_webmethod(s, "cargaModalidadPeriodos")
+                guardar_cache(("tec_modalidades",), modalidades)
             for m in modalidades:
                 if texto(m.get("IDE_MODALIDAD")) == modalidad_id:
                     modalidad_texto = texto(m.get("NOMBRE")).upper()
@@ -480,6 +523,11 @@ def api_ucr_cursos():
     if not all([guia, ciclo, recinto, escuela]):
         return jsonify({"error": "Falta guia, ciclo, recinto o escuela"}), 400
 
+    clave_cache = ("ucr_cursos", guia, ciclo, recinto, escuela)
+    encontrado, valor = con_cache(clave_cache)
+    if encontrado:
+        return jsonify(valor)
+
     try:
         s = nueva_sesion_ucr()
         soup = cadena_ucr(s, {
@@ -527,6 +575,7 @@ def api_ucr_cursos():
         except Exception:
             continue  # si un curso puntual falla, seguimos con el resto
 
+    guardar_cache(clave_cache, todos_los_cursos)
     return jsonify(todos_los_cursos)
 
 
