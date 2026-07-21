@@ -265,14 +265,40 @@ def opciones_select_ucr(soup, select_id):
     return out
 
 
+def obtener_pagina_consulta_ucr(session):
+    """El GET inicial a la UCR a veces devuelve la página de bienvenida
+    (con un enlace 'Consultar guía de horarios') en vez del formulario
+    con los combos directamente. Si no encontramos cboGuia, buscamos ese
+    enlace y hacemos el postback necesario para llegar al formulario real."""
+    r = session.get(UCR_BASE, timeout=20, verify=VERIFICAR_SSL)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "html.parser")
+    if soup.find(id="cboGuia"):
+        return soup
+
+    enlace = None
+    for a in soup.find_all("a"):
+        if a.get("id") and "consultar" in a.get_text(strip=True).lower():
+            enlace = a
+            break
+    if enlace is None:
+        for a in soup.find_all("a", id=True):
+            if "onsult" in a["id"].lower():
+                enlace = a
+                break
+
+    if enlace is not None:
+        soup = postback_ucr(session, soup, enlace["id"], {})
+
+    return soup
+
+
 def cadena_ucr(session, valores_en_orden):
     """valores_en_orden: dict con las claves en el orden de dependencia,
     ej. {'cboGuia': '1_1', 'cboCiclo': '2_2026'}. Ejecuta un postback por
     cada una, acumulando los campos previos (igual que hace el navegador),
     y devuelve el soup final."""
-    r = session.get(UCR_BASE, timeout=20, verify=VERIFICAR_SSL)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = obtener_pagina_consulta_ucr(session)
     acumulado = {}
     for campo, valor in valores_en_orden.items():
         acumulado[campo] = valor
@@ -358,9 +384,7 @@ def parsear_curso_ucr(card_div, sede_texto):
 def api_ucr_guias():
     try:
         s = nueva_sesion_ucr()
-        r = s.get(UCR_BASE, timeout=20, verify=VERIFICAR_SSL)
-        r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
+        soup = obtener_pagina_consulta_ucr(s)
         return jsonify(opciones_select_ucr(soup, "cboGuia"))
     except Exception as e:
         return jsonify({"error": f"No se pudo contactar a la UCR: {e}"}), 502
